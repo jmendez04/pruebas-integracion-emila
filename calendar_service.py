@@ -141,3 +141,49 @@ def actualizar_horario_entrega(evento_id, datos):
     )
 
     return evento_actualizado
+
+
+# -----------------------------------------
+# DELETE - ELIMINAR EVENTO
+# -----------------------------------------
+
+def eliminar_evento_entrega(evento_id):
+    servicio = obtener_servicio_calendar()
+
+    calendario_id = os.getenv(
+        "GOOGLE_CALENDAR_ID",
+        "primary"
+    )
+
+    # Consultar el evento antes de eliminarlo
+    evento = (
+        servicio.events()
+        .get(
+            calendarId=calendario_id,
+            eventId=evento_id
+        )
+        .execute()
+    )
+
+    # Evitar eliminar eventos ajenos a las pruebas EMILA
+    if not evento.get("summary", "").startswith(
+        "Entrega EMILA - Pedido "
+    ):
+        raise PermissionError(
+            "Solo se pueden eliminar eventos de entrega EMILA."
+        )
+
+    # Eliminar evento de Google Calendar
+    (
+        servicio.events()
+        .delete(
+            calendarId=calendario_id,
+            eventId=evento_id
+        )
+        .execute()
+    )
+
+    return {
+        "id": evento.get("id"),
+        "titulo": evento.get("summary")
+    }

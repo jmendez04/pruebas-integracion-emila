@@ -12,7 +12,8 @@ from validators import (
 
 from calendar_service import (
     crear_evento_entrega,
-    actualizar_horario_entrega
+    actualizar_horario_entrega,
+    eliminar_evento_entrega
 )
 
 
@@ -206,6 +207,76 @@ def modificar_entrega(evento_id):
             "inicio": evento.get("start", {}).get("dateTime"),
             "fin": evento.get("end", {}).get("dateTime")
         }
+    }), 200
+
+
+
+# -----------------------------------------
+# DELETE - ELIMINAR ENTREGA
+# -----------------------------------------
+
+@app.route(
+    "/api/entregas/<string:evento_id>",
+    methods=["DELETE"]
+)
+def eliminar_entrega(evento_id):
+
+    try:
+        evento = eliminar_evento_entrega(evento_id)
+
+    except PermissionError:
+        return jsonify({
+            "ok": False,
+            "error": "El evento no pertenece a las entregas EMILA."
+        }), 403
+
+    except FileNotFoundError:
+        app.logger.exception("Token OAuth no encontrado.")
+
+        return jsonify({
+            "ok": False,
+            "error": "No se encontro el token OAuth de Google."
+        }), 503
+
+    except (GoogleAuthError, RuntimeError, ValueError):
+        app.logger.exception("Error de autenticacion.")
+
+        return jsonify({
+            "ok": False,
+            "error": "No se pudo autenticar con Google Calendar."
+        }), 503
+
+    except HttpError as error:
+        codigo = error.resp.status
+
+        app.logger.exception(
+            "Error al eliminar evento de Google Calendar."
+        )
+
+        if codigo in (404, 410):
+            return jsonify({
+                "ok": False,
+                "error": "El evento no existe o ya fue eliminado."
+            }), 404
+
+        return jsonify({
+            "ok": False,
+            "error": "Error al eliminar el evento.",
+            "codigo_google": codigo
+        }), 502
+
+    except Exception:
+        app.logger.exception("Error inesperado.")
+
+        return jsonify({
+            "ok": False,
+            "error": "Ocurrio un error interno."
+        }), 500
+
+    return jsonify({
+        "ok": True,
+        "mensaje": "Entrega eliminada de Google Calendar.",
+        "evento": evento
     }), 200
 
 

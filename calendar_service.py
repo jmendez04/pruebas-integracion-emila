@@ -49,19 +49,20 @@ def obtener_servicio_calendar():
             )
         else:
             raise RuntimeError(
-                "Las credenciales OAuth no son validas. "
-                "Debes volver a autenticarte."
+                "Las credenciales OAuth no son validas."
             )
 
-    servicio = build(
+    return build(
         "calendar",
         "v3",
         credentials=credenciales,
         cache_discovery=False
     )
 
-    return servicio
 
+# -----------------------------------------
+# POST - CREAR EVENTO
+# -----------------------------------------
 
 def crear_evento_entrega(datos):
     servicio = obtener_servicio_calendar()
@@ -106,3 +107,37 @@ def crear_evento_entrega(datos):
     )
 
     return evento_creado
+
+
+# -----------------------------------------
+# PATCH - ACTUALIZAR HORARIO
+# -----------------------------------------
+
+def actualizar_horario_entrega(evento_id, datos):
+    servicio = obtener_servicio_calendar()
+
+    calendario_id = os.getenv(
+        "GOOGLE_CALENDAR_ID",
+        "primary"
+    )
+
+    cambios = {
+        "start": {
+            "dateTime": datos["inicio"]
+        },
+        "end": {
+            "dateTime": datos["fin"]
+        }
+    }
+
+    evento_actualizado = (
+        servicio.events()
+        .patch(
+            calendarId=calendario_id,
+            eventId=evento_id,
+            body=cambios
+        )
+        .execute()
+    )
+
+    return evento_actualizado

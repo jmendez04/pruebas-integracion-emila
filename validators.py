@@ -4,7 +4,7 @@ from datetime import datetime
 
 class ErrorValidacion(Exception):
     def __init__(self, errores):
-        super().__init__("Los datos de la entrega no son validos.")
+        super().__init__("Los datos no son validos.")
         self.errores = errores
 
 
@@ -67,6 +67,10 @@ def validar_fecha(datos, campo, errores):
         return None
 
 
+# -----------------------------------------
+# VALIDACION POST - CREAR ENTREGA
+# -----------------------------------------
+
 def validar_entrega(datos):
     if not isinstance(datos, dict):
         raise ErrorValidacion({
@@ -115,4 +119,35 @@ def validar_entrega(datos):
         "inicio": inicio.isoformat(timespec="seconds"),
         "fin": fin.isoformat(timespec="seconds"),
         "observaciones": observaciones,
+    }
+
+
+# -----------------------------------------
+# VALIDACION PATCH - MODIFICAR HORARIO
+# -----------------------------------------
+
+def validar_actualizacion_horario(datos):
+    if not isinstance(datos, dict):
+        raise ErrorValidacion({
+            "json": "Debes enviar un objeto JSON valido."
+        })
+
+    errores = {}
+
+    inicio = validar_fecha(datos, "inicio", errores)
+    fin = validar_fecha(datos, "fin", errores)
+
+    if inicio is not None and fin is not None:
+        if fin <= inicio:
+            errores["fin"] = (
+                "La fecha de finalizacion debe ser "
+                "posterior a la fecha de inicio."
+            )
+
+    if errores:
+        raise ErrorValidacion(errores)
+
+    return {
+        "inicio": inicio.isoformat(timespec="seconds"),
+        "fin": fin.isoformat(timespec="seconds")
     }
